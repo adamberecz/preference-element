@@ -1,6 +1,7 @@
 <template>
   <BuilderModal
     title="Extended Preferences"
+    class="extended-preferences-modal"
     @close="handleClose"
   >
     <template #default>
@@ -94,6 +95,7 @@ const types = Object.keys($vueform.value.extendedPreferences).reduce((prev, curr
 const form = ref({
   endpoint: false,
   displayErrors: false,
+  size: 'sm',
   schema: {
     extendedPreferences: {
       type: 'list',
@@ -109,14 +111,112 @@ const form = ref({
             items: types,
             default: Object.keys(types)[0],
             rules: 'distinct',
+            label: 'Extended Preference',
+            columns: 3,
+            messages: {
+              distinct: 'This Preferences has already been used.',
+            },
             onChange(newValue, oldValue, el$) {
               // Quick fix for distinct rule not being revalidated for
               // the other field if one is changed to a different.
               el$.form$.elements$.extendedPreferences.children$Array.forEach((el$) => {
                 el$.children$.type.validate()
               })
+            },
+          },
+          showOnPage: {
+            type: 'radiogroup',
+            label: 'Show on Page',
+            view: 'tabs',
+            default: 1,
+            items: [
+              { value: true, label: 'On' },
+              { value: false, label: 'Off' },
+            ],
+            columns: 1,
+          },
+          element: {
+            type: 'select',
+            search: true,
+            canDeselect: false,
+            canClear: false,
+            label: 'Type',
+            default: 'select',
+            items: {
+              select: 'Single Select',
+              multiselect: 'Multi Select',
+              text: 'Free Text',
+            },
+            columns: 2,
+            conditions: [
+              ['extendedPreferences.*.showOnPage', true]
+            ],
+            rules: 'required',
+            messages: {
+              required: 'Please select a type',
             }
-          }
+          },
+          label: {
+            type: 'text',
+            label: 'Label',
+            placeholder: 'Type a label...',
+            floating: false,
+            columns: 2,
+            conditions: [
+              ['extendedPreferences.*.showOnPage', true]
+            ],
+            rules: 'required',
+            messages: {
+              required: 'Please provide a label',
+            }
+          },
+          userCanEdit: {
+            type: 'radiogroup',
+            label: 'Can Edit',
+            view: 'tabs',
+            default: 1,
+            items: [
+              { value: true, label: 'On' },
+              { value: false, label: 'Off' },
+            ],
+            columns: 1,
+            conditions: [
+              ['extendedPreferences.*.showOnPage', true]
+            ],
+          },
+          hasDefault: {
+            type: 'radiogroup',
+            view: 'tabs',
+            label: 'Has Default',
+            default: 1,
+            items: [
+              { value: true, label: 'On' },
+              { value: false, label: 'Off' },
+            ],
+            columns: 1,
+            conditions: [
+              ['extendedPreferences.*.userCanEdit', true],
+              ['extendedPreferences.*.showOnPage', true],
+            ],
+          },
+          default: {
+            type: 'text',
+            label: 'Default Value',
+            placeholder: 'Type a default...',
+            floating: false,
+            columns: 2,
+            conditions: [
+              [
+                ['extendedPreferences.*.showOnPage', false],
+                ['extendedPreferences.*.userCanEdit', false],
+                ['extendedPreferences.*.hasDefault', true],
+              ]
+            ],
+            messages: {
+              required: 'Default value must be provided'
+            },
+            rules: 'required'
+          },
         }
       }
     },
@@ -170,6 +270,12 @@ onMounted(() => {
 </script>
 
 <style lang="scss">
+.extended-preferences-modal {
+  .vfb-modal {
+    @apply max-w-[1200px] mx-auto;
+  }
+}
+
 .vfb-extended-preferences-empty-wrapper {
   @apply mb-4 text-center;
 }

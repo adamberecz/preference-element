@@ -192,6 +192,11 @@ export default {
           schema.component = 'TextElement'
         }
 
+        if (p.showOnPage === false) {
+          schema.component = 'HiddenElement'
+          schema.meta = true
+        }
+
         if (p.userCanEdit === false) {
           schema.disabled = true
         }
