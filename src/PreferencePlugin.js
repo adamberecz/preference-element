@@ -2,6 +2,7 @@
 import RadioPreferenceElement from './components/RadioPreferenceElement.vue';
 import CheckboxPreferenceElement from './components/CheckboxPreferenceElement.vue';
 import TogglePreferenceElement from './components/TogglePreferenceElement.vue';
+import PreferenceElement from './components/PreferenceElement.vue';
 
 export default {
   // Adding a preset to make sure tabs are
@@ -44,6 +45,7 @@ export default {
       RadioPreferenceElement,
       CheckboxPreferenceElement,
       TogglePreferenceElement,
+      PreferenceElement,
     ]
   },
 
@@ -392,6 +394,28 @@ export default {
         ],
       },
     ];
+
+    $vueform.extendedPreferences = {
+      frequency: {
+        label: 'Frequency',
+        options: [
+          'Daily',
+          'Weekly',
+          'Monthly',
+        ],
+      },
+      size: {
+        label: 'Size',
+        options: [
+          'Small',
+          'Medium',
+          'Large',
+        ],
+      },
+      color: {
+        label: 'Color',
+      },
+    }
 
     $vueform.getChannel = (channel) => {
       return $vueform.channels.find(c => c.value === channel)

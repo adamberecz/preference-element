@@ -251,13 +251,13 @@ const IdField = class extends BaseElementField {
   }
 };
 
-const DefaultField = class extends BaseElementField {
-  name = 'DefaultField';
+const PreferenceDefaultField = class extends BaseElementField {
+  name = 'PreferenceDefaultField';
 
   // Watch for changes of label and description
   // and update the ID if any of them change.
   watchers = {
-    [`${this.section}.default`]: [
+    [`${this.section}.preferenceDefault`]: [
       [
         ['mode', 'onlyAllowOptOut'],
         async (el$, [mode, onlyAllowOptOut]) => {
@@ -270,7 +270,7 @@ const DefaultField = class extends BaseElementField {
 
   get schema() {
     return {
-      default: {
+      preferenceDefault: {
         type: 'hidden',
         meta: true,
       },
@@ -479,7 +479,8 @@ export default {
         category: 'fields',
         rules: [],
         schema: {
-          type: 'radio-preference',
+          type: 'preference',
+          preferenceType: 'radio',
           builder: {
             clone: false,
           },
@@ -491,7 +492,7 @@ export default {
             fields: {
               type: { type: TypeField },
               id: { type: IdField },
-              default: { type: DefaultField },
+              preferenceDefault: { type: PreferenceDefaultField },
               view: { type: ViewField },
               channel: { type: ChannelField },
               statement: { type: StatementField },
@@ -518,7 +519,8 @@ export default {
         category: 'fields',
         rules: [],
         schema: {
-          type: 'checkbox-preference',
+          type: 'preference',
+          preferenceType: 'checkbox',
           builder: {
             clone: false,
           },
@@ -547,7 +549,8 @@ export default {
         category: 'fields',
         rules: [],
         schema: {
-          type: 'toggle-preference',
+          type: 'preference',
+          preferenceType: 'toggle',
           builder: {
             clone: false,
           },
