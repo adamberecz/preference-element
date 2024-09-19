@@ -1,7 +1,9 @@
 import '@vueform/builder/index.css';
 import { TypeField, BaseElementField } from '@vueform/builder';
-import { nextTick } from 'vue';
+import { nextTick, markRaw } from 'vue';
 import theme from './theme.config.js';
+import ExtendedPreferences from './src/components/ExtendedPreferences.vue'
+import ExtendedPreferencesModal from './src/components/ExtendedPreferencesModal.vue'
 
 const ViewField = class extends BaseElementField {
   get schema() {
@@ -343,87 +345,94 @@ const ModeField = class extends BaseElementField {
 const ItemsField = class extends BaseElementField {
   name = 'ItemsField';
 
+  wrapped = true
+
   get schema() {
     return {
-      subtitle_items: {
-        type: 'static',
-        content: 'Options',
-        presets: ['prop-subtitle'],
-      },
-      items: {
-        type: 'list',
-        default: [
-          {
-            value: 1,
-            displayLabel: 'Opt in',
-            label: 'Opt In',
+      itemsWrapper: {
+        type: 'object',
+        schema: {
+          subtitle_items: {
+            type: 'static',
+            content: 'Options',
+            presets: ['prop-subtitle'],
           },
-          {
-            value: 0,
-            displayLabel: 'Opt out',
-            label: 'Opt Out',
-          },
-          {
-            value: 2,
-            displayLabel: 'No change',
-            label: 'No Change',
-          },
-        ],
-        sort: true,
-        controls: {
-          add: false,
-          remove: false,
-          sort: true,
-        },
-        addClasses: {
-          ListElement: {
-            handle: '!left-32',
-          },
-        },
-        object: {
-          schema: {
-            value: {
-              type: 'hidden',
-              meta: true,
+          items: {
+            type: 'list',
+            default: [
+              {
+                value: 1,
+                displayLabel: 'Opt in',
+                label: 'Opt In',
+              },
+              {
+                value: 0,
+                displayLabel: 'Opt out',
+                label: 'Opt Out',
+              },
+              {
+                value: 2,
+                displayLabel: 'No change',
+                label: 'No Change',
+              },
+            ],
+            sort: true,
+            controls: {
+              add: false,
+              remove: false,
+              sort: true,
             },
-            displayLabel: {
-              type: 'text',
-              readonly: true,
-              columns: 5,
-              addClasses: {
-                TextElement: {
-                  inputContainer: '!border-0 !bg-transparent !pl-0',
-                  input_sm: '!pl-0',
+            addClasses: {
+              ListElement: {
+                handle: '!left-32',
+              },
+            },
+            object: {
+              schema: {
+                value: {
+                  type: 'hidden',
+                  meta: true,
+                },
+                displayLabel: {
+                  type: 'text',
+                  readonly: true,
+                  columns: 5,
+                  addClasses: {
+                    TextElement: {
+                      inputContainer: '!border-0 !bg-transparent !pl-0',
+                      input_sm: '!pl-0',
+                    },
+                  },
+                },
+                label: {
+                  type: 'text',
+                  columns: 7,
+                  placeholder: 'Label',
+                  floating: false,
                 },
               },
             },
-            label: {
-              type: 'text',
-              columns: 7,
-              placeholder: 'Label',
-              floating: false,
-            },
-          },
+          }
         },
-      },
+      }
     };
   }
 
-  save(value, old, key, el$) {
+  save({ items }, old, key, el$) {
     const update = {};
     const remove = [];
 
     // If it's in the default state, remove the `items` prop
     if (
       [0, 1, 2].every(
-        (i) => value[i].label === this.schema.items.default[i].label
+        (i) => items[i].label === this.schema.itemsWrapper.schema.items.default[i].label
       )
     ) {
       remove.push('items');
 
       // Otherwise sanitize the items (rm `displayLabel`)
     } else {
-      update.items = value.map((i) => ({
+      update.items = items.map((i) => ({
         value: i.value,
         label: i.label,
       }));
@@ -433,8 +442,10 @@ const ItemsField = class extends BaseElementField {
   }
 
   load(data) {
-    const load = {};
-    const labelMap = this.schema.items.default.reduce(
+    const load = {
+      itemsWrapper: {}
+    };
+    const labelMap = this.schema.itemsWrapper.schema.items.default.reduce(
       (prev, curr) => ({
         ...prev,
         [curr.value]: curr.label,
@@ -444,19 +455,54 @@ const ItemsField = class extends BaseElementField {
 
     // If `items` are loaded set their `displayLabel`
     if (data.items) {
-      load.items = data.items.map((i) => ({
+      load.itemsWrapper.items = data.items.map((i) => ({
         ...i,
         displayLabel: labelMap[i.value],
       }));
 
       // Otherwise load the default items
     } else {
-      load.items = this.schema.items.default;
+      load.itemsWrapper.items = this.schema.itemsWrapper.schema.items.default;
     }
 
     return load;
   }
 };
+
+const ExtendedPreferencesField = class extends BaseElementField {
+  name = 'ExtendedPreferencesField'
+
+  wrapped = true
+
+  get schema() {
+    const emit = this.emit
+
+    return {
+      extenededPreferencesWrapper: {
+        type: 'object',
+        schema: {
+          subtitle: {
+            type: 'static',
+            content: 'Extended Preferences',
+            presets: ['prop-subtitle'],
+          },
+          extenededPreferences: {
+            type: 'static',
+            attrs: {
+              extendedPreferences: this.elementSchema.extendedPreferences,
+            },
+            slots: {
+              default: markRaw(ExtendedPreferences),
+            },
+            handleEvent() {
+              emit('event', ...arguments)
+            },
+          }
+        }
+      }
+    }
+  }
+}
 
 export default {
   theme,
@@ -470,6 +516,9 @@ export default {
     'container',
     'divider',
   ],
+  modals: {
+    'extended-preferences': ExtendedPreferencesModal
+  },
   element: {
     types: {
       radioPreference: {
@@ -500,6 +549,7 @@ export default {
               onlyAllowOptOut: { type: OnlyAllowOptOutField },
               showChannel: { type: ShowChannelField },
               items: { type: ItemsField },
+              extendedPreferences: { type: ExtendedPreferencesField },
             },
           },
         },
@@ -509,6 +559,7 @@ export default {
             ['channel', 'statement'],
             ['mode', 'onlyAllowOptOut', 'showChannel'],
             ['items'],
+            ['extendedPreferences'],
           ],
         },
       },
