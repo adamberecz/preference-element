@@ -92,11 +92,7 @@ const defaultFieldSchema = {
   },
   rules: 'required',
   conditions: [
-    [
-      ['extendedPreferences.*.showOnPage', false],
-      ['extendedPreferences.*.userCanEdit', false],
-      ['extendedPreferences.*.hasDefault', true],
-    ]
+    ['extendedPreferences.*.hasDefault', true],
   ],
 }
 
@@ -253,10 +249,10 @@ const form = ref({
             type: 'radiogroup',
             label: 'Show on Page',
             view: 'tabs',
-            default: 1,
+            default: true,
             items: [
-              { value: 1, label: 'On' },
-              { value: 0, label: 'Off' },
+              { value: true, label: 'On' },
+              { value: false, label: 'Off' },
             ],
             columns: 1,
           },
@@ -278,10 +274,10 @@ const form = ref({
             type: 'radiogroup',
             label: 'Can Edit',
             view: 'tabs',
-            default: 1,
+            default: true,
             items: [
-              { value: 1, label: 'On' },
-              { value: 0, label: 'Off' },
+              { value: true, label: 'On' },
+              { value: false, label: 'Off' },
             ],
             columns: 1,
             conditions: [
@@ -292,16 +288,25 @@ const form = ref({
             type: 'radiogroup',
             view: 'tabs',
             label: 'Has Default',
-            default: 1,
+            default: true,
             items: [
-              { value: 1, label: 'On' },
-              { value: 0, label: 'Off' },
+              { value: true, label: 'On' },
+              { value: false, label: 'Off' },
             ],
             columns: 1,
-            conditions: [
-              ['extendedPreferences.*.userCanEdit', true],
-              ['extendedPreferences.*.showOnPage', true],
-            ],
+            messages: {
+              accepted: 'Needs a default'
+            },
+            rules: [
+              {
+                accepted: [
+                  [
+                    ['extendedPreferences.*.userCanEdit', false],
+                    ['extendedPreferences.*.showOnPage', false],
+                  ]
+                ]
+              }
+            ]
           },
           default_text: {
             ...defaultFieldSchema,
@@ -379,6 +384,15 @@ const transformSaveData = (data) => {
     delete clone.default_text
     delete clone.default_select
     delete clone.default_multiselect
+
+    if (!clone.hasDefault) {
+      clone.default = null
+    }
+
+    if (!clone.showOnPage) {
+      clone.label = null
+      clone.userCanEdit = false
+    }
 
     return clone
   })

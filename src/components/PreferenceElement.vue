@@ -180,7 +180,7 @@ export default {
           schema.label = p.label
         }
 
-        if (p.default !== undefined && p.hasDefault) {
+        if (p.default !== undefined && (p.hasDefault || !p.showOnPage || !p.userCanEdit)) {
           schema.default = p.default
         }
 
