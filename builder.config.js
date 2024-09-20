@@ -586,11 +586,16 @@ export default {
               channel: { type: ChannelField },
               statement: { type: StatementField },
               showChannel: { type: ShowChannelField },
+              extendedPreferences: { type: ExtendedPreferencesField },
             },
           },
         },
         separators: {
-          properties: [['type', 'id', 'channel', 'statement'], ['showChannel']],
+          properties: [
+            ['type', 'id', 'channel', 'statement'],
+            ['showChannel'],
+            ['extendedPreferences'],
+          ],
         },
       },
       togglePreference: {
@@ -616,11 +621,16 @@ export default {
               channel: { type: ChannelField },
               statement: { type: StatementField },
               showChannel: { type: ShowChannelField },
+              extendedPreferences: { type: ExtendedPreferencesField },
             },
           },
         },
         separators: {
-          properties: [['type', 'id', 'channel', 'statement'], ['showChannel']],
+          properties: [
+            ['type', 'id', 'channel', 'statement'],
+            ['showChannel'],
+            ['extendedPreferences'],
+          ],
         },
       },
     },
