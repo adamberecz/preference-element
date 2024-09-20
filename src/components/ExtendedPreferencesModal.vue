@@ -79,6 +79,42 @@ const { builder$ } = defineProps({
 
 const $vueform = inject('$vueform')
 
+// ============== CONTSANTS ==============
+
+const defaultFieldSchema = {
+  type: 'text',
+  label: 'Default Value',
+  placeholder: 'Type a default...',
+  floating: false,
+  columns: 2,
+  messages: {
+    required: 'Default value must be provided'
+  },
+  rules: 'required',
+  conditions: [
+    [
+      ['extendedPreferences.*.showOnPage', false],
+      ['extendedPreferences.*.userCanEdit', false],
+      ['extendedPreferences.*.hasDefault', true],
+    ]
+  ],
+}
+
+const types = Object.keys($vueform.value.extendedPreferences).reduce((prev, curr) => ({
+  ...prev,
+  [curr]: $vueform.value.extendedPreferences[curr].label,
+}), {})
+
+// =============== HELPERS ===============
+
+// Quick fix for distinct rule not being revalidated for
+// the other field if one is changed to a different.
+const revalidateDuplicates = (el$) => {
+  el$.form$.elements$.extendedPreferences.children$Array.forEach((el$) => {
+    el$.children$.type.validate()
+  })
+}
+
 // ================ DATA =================
 
 const form$ = ref(null)
@@ -87,20 +123,36 @@ const data = computed(() => {
   return form$.value?.data?.extendedPreferences || []
 })
 
-const types = Object.keys($vueform.value.extendedPreferences).reduce((prev, curr) => ({
-  ...prev,
-  [curr]: $vueform.value.extendedPreferences[curr].label,
-}), {})
-
 const form = ref({
   endpoint: false,
   displayErrors: false,
   size: 'sm',
+  replaceClasses: {
+    ListElement: {
+      handle: {
+        'top-0': 'top-[1.375rem]',
+        'left-0': 'left-0.5'
+      }
+    },
+  },
+  addClasses: {
+    TagsElement: {
+      select: {
+        tag: 'max-w-[90%]'
+      }
+    }
+  },
   schema: {
     extendedPreferences: {
       type: 'list',
       initial: 0,
+      sort: true,
       addText: '+ Add preference',
+      onChange(newValue, oldValue, el$) {
+        if (newValue.length === oldValue.length -1) {
+          revalidateDuplicates(el$)
+        }
+      },
       object: {
         schema: {
           type: {
@@ -117,23 +169,51 @@ const form = ref({
               distinct: 'This Preferences has already been used.',
             },
             onChange(newValue, oldValue, el$) {
-              // Quick fix for distinct rule not being revalidated for
-              // the other field if one is changed to a different.
-              el$.form$.elements$.extendedPreferences.children$Array.forEach((el$) => {
-                el$.children$.type.validate()
+              revalidateDuplicates(el$)
+
+              // Define available element types
+              const siblings$ = el$.form$.siblings$(el$.path)
+              const element$ = siblings$.element
+
+              const extendedPreferenceDescriptor = $vueform.value.extendedPreferences[newValue]
+              const options = extendedPreferenceDescriptor.options || []
+              const optionsCount = Object.keys(options)?.length
+
+              // Resolve the options of the Type selector
+              element$.input.resolveOptions((newOptions) => {
+                console.log(element$.value)
+                if (Object.keys(newOptions).indexOf(element$.value) === -1) {
+                  element$.reset()
+                }
               })
+
+              // If the Type has related options refresh the Default Value select/multiselect items.
+              if (optionsCount > 1) {
+                // If the Default Value has a value that is not amongst the options of the new Type clear it.
+
+                // Clearing in case of a select type.
+                siblings$.default_select.input.resolveOptions((newOptions) => {
+                  if (Object.values(newOptions).indexOf(siblings$.default_select.value) === -1) {
+                    siblings$.default_select.clear()
+
+                    nextTick(() => {
+                      siblings$.default_select.resetValidators()
+                    })
+                  }
+                })
+
+                // Clearing in case of a multiselect type.
+                siblings$.default_multiselect.input.resolveOptions((newOptions) => {
+                  if (!siblings$.default_multiselect.value.every(v => Object.values(newOptions).indexOf(v) !== -1)) {
+                    siblings$.default_multiselect.clear()
+
+                    nextTick(() => {
+                      siblings$.default_multiselect.resetValidators()
+                    })
+                  }
+                })
+              }
             },
-          },
-          showOnPage: {
-            type: 'radiogroup',
-            label: 'Show on Page',
-            view: 'tabs',
-            default: 1,
-            items: [
-              { value: true, label: 'On' },
-              { value: false, label: 'Off' },
-            ],
-            columns: 1,
           },
           element: {
             type: 'select',
@@ -141,20 +221,44 @@ const form = ref({
             canDeselect: false,
             canClear: false,
             label: 'Type',
-            default: 'select',
-            items: {
-              select: 'Single Select',
-              multiselect: 'Multi Select',
-              text: 'Free Text',
+            default: 'text',
+            items: async (query, input$) => {
+              await nextTick()
+
+              const el$ = input$.$parent.el$
+              const siblings$ = el$.form$.siblings$(el$.path)
+              const type$ = siblings$.type
+
+              const extendedPreferenceDescriptor = $vueform.value.extendedPreferences[type$.value]
+              const options = extendedPreferenceDescriptor.options || []
+              const optionsCount = Object.keys(options)?.length
+
+              return optionsCount > 1 ? {
+                text: 'Free Text',
+                select: 'Single Select',
+                multiselect: 'Multi Select',
+              } : {
+                text: 'Free Text',
+              }
             },
             columns: 2,
-            conditions: [
-              ['extendedPreferences.*.showOnPage', true]
-            ],
             rules: 'required',
             messages: {
               required: 'Please select a type',
+            },
+            onChange(newValue, oldValue, el$) {
             }
+          },
+          showOnPage: {
+            type: 'radiogroup',
+            label: 'Show on Page',
+            view: 'tabs',
+            default: 1,
+            items: [
+              { value: 1, label: 'On' },
+              { value: 0, label: 'Off' },
+            ],
+            columns: 1,
           },
           label: {
             type: 'text',
@@ -176,8 +280,8 @@ const form = ref({
             view: 'tabs',
             default: 1,
             items: [
-              { value: true, label: 'On' },
-              { value: false, label: 'Off' },
+              { value: 1, label: 'On' },
+              { value: 0, label: 'Off' },
             ],
             columns: 1,
             conditions: [
@@ -190,8 +294,8 @@ const form = ref({
             label: 'Has Default',
             default: 1,
             items: [
-              { value: true, label: 'On' },
-              { value: false, label: 'Off' },
+              { value: 1, label: 'On' },
+              { value: 0, label: 'Off' },
             ],
             columns: 1,
             conditions: [
@@ -199,23 +303,52 @@ const form = ref({
               ['extendedPreferences.*.showOnPage', true],
             ],
           },
-          default: {
-            type: 'text',
-            label: 'Default Value',
-            placeholder: 'Type a default...',
-            floating: false,
-            columns: 2,
+          default_text: {
+            ...defaultFieldSchema,
             conditions: [
-              [
-                ['extendedPreferences.*.showOnPage', false],
-                ['extendedPreferences.*.userCanEdit', false],
-                ['extendedPreferences.*.hasDefault', true],
-              ]
+              ...defaultFieldSchema.conditions,
+              ['extendedPreferences.*.element', 'text'],
             ],
-            messages: {
-              required: 'Default value must be provided'
+          },
+          default_select: {
+            ...defaultFieldSchema,
+            type: 'select',
+            allowAbsent: true,
+            items: async (query, input$) => {
+              await nextTick()
+
+              const el$ = input$.$parent.el$
+              const siblings$ = el$.form$.siblings$(el$.path)
+              const type$ = siblings$.type
+
+              return $vueform.value.extendedPreferences[type$.value]?.options || []
             },
-            rules: 'required'
+            search: true,
+            conditions: [
+              ...defaultFieldSchema.conditions,
+              ['extendedPreferences.*.element', 'select'],
+            ],
+          },
+          default_multiselect: {
+            ...defaultFieldSchema,
+            type: 'multiselect',
+            items: async (query, input$) => {
+              await nextTick()
+              
+              const el$ = input$.$parent.el$
+              const siblings$ = el$.form$.siblings$(el$.path)
+              const type$ = siblings$.type
+
+              return $vueform.value.extendedPreferences[type$.value]?.options || []
+            },
+            allowAbsent: true,
+            search: true,
+            closeOnSelect: false,
+            hideSelected: false,
+            conditions: [
+              ...defaultFieldSchema.conditions,
+              ['extendedPreferences.*.element', 'multiselect'],
+            ],
           },
         }
       }
@@ -224,6 +357,56 @@ const form = ref({
 })
 
 // =============== METHODS ===============
+
+const transformSaveData = (data) => {
+  return data.map((line) => {
+    const clone = { ...line }
+
+    switch (clone.element) {
+      case 'select':
+        clone.default = clone.default_select
+        break
+
+      case 'multiselect':
+        clone.default = clone.default_multiselect
+        break
+
+      case 'text':
+        clone.default = clone.default_text
+        break
+    }
+
+    delete clone.default_text
+    delete clone.default_select
+    delete clone.default_multiselect
+
+    return clone
+  })
+}
+
+const transformLoadData = (data) => {
+  return data.map((line) => {
+    const clone = { ...line }
+
+    switch (clone.element) {
+      case 'select':
+        clone.default_select = clone.default
+        break
+
+      case 'multiselect':
+        clone.default_multiselect = clone.default
+        break
+
+      case 'text':
+        clone.default_text = clone.default
+        break
+    }
+
+    delete clone.default
+
+    return clone
+  })
+}
 
 const handleAdd = () => {
   form$.value.el$('extendedPreferences').add(undefined, true)
@@ -237,7 +420,7 @@ const handleSave = async () => {
   }
 
   builder$.updateBuilder('schema', {
-    extendedPreferences: data.value,
+    extendedPreferences: transformSaveData(data.value),
   }, {
     path: builder$.selectedElement
   })
@@ -245,6 +428,15 @@ const handleSave = async () => {
   builder$.refreshConfigPanel(builder$.schema)
 
   emit('close')
+
+  // Clear to form so we don't get into a position where string values are 
+  // loaded to elements like tags that expect an array and throw an error.
+  builder$.preview$.form$.clear()
+
+  await nextTick()
+  await nextTick()
+  
+  builder$.preview$.form$.reset()
 }
 
 const handleReset = () => {
@@ -262,8 +454,8 @@ const handleClose = () => {
 // ================ HOOKS ================
 
 onMounted(() => {
-  form$.value.load({
-    extendedPreferences: builder$.selectedElementSchema.extendedPreferences
+  form$.value.update({
+    extendedPreferences: transformLoadData(builder$.selectedElementSchema.extendedPreferences || [])
   })
 })
 
