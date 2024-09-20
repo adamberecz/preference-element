@@ -111,7 +111,7 @@ const types = Object.keys($vueform.value.extendedPreferences).reduce((prev, curr
 // the other field if one is changed to a different.
 const revalidateDuplicates = (el$) => {
   el$.form$.elements$.extendedPreferences.children$Array.forEach((el$) => {
-    el$.children$.type.validate()
+    el$.children$.preference.validate()
   })
 }
 
@@ -155,7 +155,7 @@ const form = ref({
       },
       object: {
         schema: {
-          type: {
+          preference: {
             type: 'select',
             search: true,
             canDeselect: false,
@@ -173,17 +173,17 @@ const form = ref({
 
               // Define available element types
               const siblings$ = el$.form$.siblings$(el$.path)
-              const element$ = siblings$.element
+              const type$ = siblings$.type
 
               const extendedPreferenceDescriptor = $vueform.value.extendedPreferences[newValue]
               const options = extendedPreferenceDescriptor.options || []
               const optionsCount = Object.keys(options)?.length
 
               // Resolve the options of the Type selector
-              element$.input.resolveOptions((newOptions) => {
-                console.log(element$.value)
-                if (Object.keys(newOptions).indexOf(element$.value) === -1) {
-                  element$.reset()
+              type$.input.resolveOptions((newOptions) => {
+                console.log(type$.value)
+                if (Object.keys(newOptions).indexOf(type$.value) === -1) {
+                  type$.reset()
                 }
               })
 
@@ -215,7 +215,7 @@ const form = ref({
               }
             },
           },
-          element: {
+          type: {
             type: 'select',
             search: true,
             canDeselect: false,
@@ -227,9 +227,9 @@ const form = ref({
 
               const el$ = input$.$parent.el$
               const siblings$ = el$.form$.siblings$(el$.path)
-              const type$ = siblings$.type
+              const preference$ = siblings$.preference
 
-              const extendedPreferenceDescriptor = $vueform.value.extendedPreferences[type$.value]
+              const extendedPreferenceDescriptor = $vueform.value.extendedPreferences[preference$.value]
               const options = extendedPreferenceDescriptor.options || []
               const optionsCount = Object.keys(options)?.length
 
@@ -307,7 +307,7 @@ const form = ref({
             ...defaultFieldSchema,
             conditions: [
               ...defaultFieldSchema.conditions,
-              ['extendedPreferences.*.element', 'text'],
+              ['extendedPreferences.*.type', 'text'],
             ],
           },
           default_select: {
@@ -319,14 +319,14 @@ const form = ref({
 
               const el$ = input$.$parent.el$
               const siblings$ = el$.form$.siblings$(el$.path)
-              const type$ = siblings$.type
+              const preference$ = siblings$.preference
 
-              return $vueform.value.extendedPreferences[type$.value]?.options || []
+              return $vueform.value.extendedPreferences[preference$.value]?.options || []
             },
             search: true,
             conditions: [
               ...defaultFieldSchema.conditions,
-              ['extendedPreferences.*.element', 'select'],
+              ['extendedPreferences.*.type', 'select'],
             ],
           },
           default_multiselect: {
@@ -337,9 +337,9 @@ const form = ref({
               
               const el$ = input$.$parent.el$
               const siblings$ = el$.form$.siblings$(el$.path)
-              const type$ = siblings$.type
+              const preference$ = siblings$.preference
 
-              return $vueform.value.extendedPreferences[type$.value]?.options || []
+              return $vueform.value.extendedPreferences[preference$.value]?.options || []
             },
             allowAbsent: true,
             search: true,
@@ -347,7 +347,7 @@ const form = ref({
             hideSelected: false,
             conditions: [
               ...defaultFieldSchema.conditions,
-              ['extendedPreferences.*.element', 'multiselect'],
+              ['extendedPreferences.*.type', 'multiselect'],
             ],
           },
         }
@@ -362,7 +362,7 @@ const transformSaveData = (data) => {
   return data.map((line) => {
     const clone = { ...line }
 
-    switch (clone.element) {
+    switch (clone.type) {
       case 'select':
         clone.default = clone.default_select
         break
@@ -388,7 +388,7 @@ const transformLoadData = (data) => {
   return data.map((line) => {
     const clone = { ...line }
 
-    switch (clone.element) {
+    switch (clone.type) {
       case 'select':
         clone.default_select = clone.default
         break

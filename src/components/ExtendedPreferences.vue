@@ -36,7 +36,7 @@ export default {
     })
 
     const extendedPreferences = computed(() => {
-      return Object.values(el$.value.attrs.extendedPreferences || []).map((p) => extendedPreferenceList.value[p.type].label) || []
+      return Object.values(el$.value.attrs.extendedPreferences || []).map((p) => extendedPreferenceList.value[p.preference].label) || []
     })
 
     // =============== METHODS ===============

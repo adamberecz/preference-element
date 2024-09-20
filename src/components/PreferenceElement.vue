@@ -169,35 +169,37 @@ export default {
     const extendedPreferenceSchemas = computed(() => {
       return extendedPreferences.value.map((p) => {
         let schema = {
-          name: p.type,
+          name: p.preference,
         }
 
         if (p.label !== undefined) {
           schema.label = p.label
         }
 
-        if (p.default !== undefined) {
+        if (p.default !== undefined && p.hasDefault) {
           schema.default = p.default
         }
 
-        if (p.element === 'select') {
+        if (p.type === 'select') {
           schema.component = 'SelectElement'
-          schema.items = extendedPreferenceList.value[p.type].options
+          schema.items = extendedPreferenceList.value[p.preference].options
         }
-        else if (p.element === 'multiselect') {
+        else if (p.type === 'multiselect') {
           schema.component = 'TagsElement'
-          schema.items = extendedPreferenceList.value[p.type].options
+          schema.items = extendedPreferenceList.value[p.preference].options
         }
         else {
           schema.component = 'TextElement'
         }
 
-        if (p.showOnPage === false) {
+        if (!p.showOnPage) {
           schema.component = 'HiddenElement'
           schema.meta = true
+
+          delete schema.items
         }
 
-        if (p.userCanEdit === false) {
+        if (!p.userCanEdit) {
           schema.disabled = true
         }
 
