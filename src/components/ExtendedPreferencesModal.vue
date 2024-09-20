@@ -111,6 +111,14 @@ const revalidateDuplicates = (el$) => {
   })
 }
 
+const getPreferenceOptions = (preference) => {
+  return $vueform.value.extendedPreferences[preference]?.options || []
+}
+
+const getPreferenceOptionsCount = (preference) => {
+  return Object.keys(getPreferenceOptions(preference)).length
+}
+
 // ================ DATA =================
 
 const form$ = ref(null)
@@ -171,20 +179,15 @@ const form = ref({
               const siblings$ = el$.form$.siblings$(el$.path)
               const type$ = siblings$.type
 
-              const extendedPreferenceDescriptor = $vueform.value.extendedPreferences[newValue]
-              const options = extendedPreferenceDescriptor.options || []
-              const optionsCount = Object.keys(options)?.length
-
               // Resolve the options of the Type selector
               type$.input.resolveOptions((newOptions) => {
-                console.log(type$.value)
                 if (Object.keys(newOptions).indexOf(type$.value) === -1) {
                   type$.reset()
                 }
               })
 
               // If the Type has related options refresh the Default Value select/multiselect items.
-              if (optionsCount > 1) {
+              if (getPreferenceOptionsCount(newValue) > 1) {
                 // If the Default Value has a value that is not amongst the options of the new Type clear it.
 
                 // Clearing in case of a select type.
@@ -211,6 +214,17 @@ const form = ref({
               }
             },
           },
+          showOnPage: {
+            type: 'radiogroup',
+            label: 'Show on Page',
+            view: 'tabs',
+            default: true,
+            items: [
+              { value: true, label: 'On' },
+              { value: false, label: 'Off' },
+            ],
+            columns: 1,
+          },
           type: {
             type: 'select',
             search: true,
@@ -223,13 +237,8 @@ const form = ref({
 
               const el$ = input$.$parent.el$
               const siblings$ = el$.form$.siblings$(el$.path)
-              const preference$ = siblings$.preference
 
-              const extendedPreferenceDescriptor = $vueform.value.extendedPreferences[preference$.value]
-              const options = extendedPreferenceDescriptor.options || []
-              const optionsCount = Object.keys(options)?.length
-
-              return optionsCount > 1 ? {
+              return getPreferenceOptionsCount(siblings$.preference.value) > 1 ? {
                 text: 'Free Text',
                 select: 'Single Select',
                 multiselect: 'Multi Select',
@@ -242,19 +251,9 @@ const form = ref({
             messages: {
               required: 'Please select a type',
             },
-            onChange(newValue, oldValue, el$) {
-            }
-          },
-          showOnPage: {
-            type: 'radiogroup',
-            label: 'Show on Page',
-            view: 'tabs',
-            default: true,
-            items: [
-              { value: true, label: 'On' },
-              { value: false, label: 'Off' },
-            ],
-            columns: 1,
+            conditions: [
+              ['extendedPreferences.*.showOnPage', true]
+            ]
           },
           label: {
             type: 'text',
@@ -312,7 +311,16 @@ const form = ref({
             ...defaultFieldSchema,
             conditions: [
               ...defaultFieldSchema.conditions,
-              ['extendedPreferences.*.type', 'text'],
+              (form$, el$) => {
+                const siblings$ = form$.siblings$(el$.path)
+
+                if (siblings$.showOnPage.value) {
+                  return siblings$.type.value === 'text'
+                }
+                else {
+                  return getPreferenceOptionsCount(siblings$.preference.value) <= 1
+                }
+              }
             ],
           },
           default_select: {
@@ -324,14 +332,22 @@ const form = ref({
 
               const el$ = input$.$parent.el$
               const siblings$ = el$.form$.siblings$(el$.path)
-              const preference$ = siblings$.preference
 
-              return $vueform.value.extendedPreferences[preference$.value]?.options || []
+              return getPreferenceOptions(siblings$.preference.value)
             },
             search: true,
             conditions: [
               ...defaultFieldSchema.conditions,
-              ['extendedPreferences.*.type', 'select'],
+              (form$, el$) => {
+                const siblings$ = form$.siblings$(el$.path)
+
+                if (siblings$.showOnPage.value) {
+                  return siblings$.type.value === 'select'
+                }
+                else {
+                  return getPreferenceOptionsCount(siblings$.preference.value) > 1
+                }
+              }
             ],
           },
           default_multiselect: {
@@ -342,9 +358,8 @@ const form = ref({
               
               const el$ = input$.$parent.el$
               const siblings$ = el$.form$.siblings$(el$.path)
-              const preference$ = siblings$.preference
 
-              return $vueform.value.extendedPreferences[preference$.value]?.options || []
+              return getPreferenceOptions(siblings$.preference.value)
             },
             allowAbsent: true,
             search: true,
@@ -352,6 +367,7 @@ const form = ref({
             hideSelected: false,
             conditions: [
               ...defaultFieldSchema.conditions,
+              ['extendedPreferences.*.showOnPage', true],
               ['extendedPreferences.*.type', 'multiselect'],
             ],
           },
@@ -367,23 +383,31 @@ const transformSaveData = (data) => {
   return data.map((line) => {
     const clone = { ...line }
 
-    switch (clone.type) {
-      case 'select':
+    if (!clone.showOnPage) {
+      const options = getPreferenceOptions(line.preference)
+
+      if (options.length > 1) {
         clone.default = clone.default_select
-        break
-
-      case 'multiselect':
-        clone.default = clone.default_multiselect
-        break
-
-      case 'text':
+      } else {
         clone.default = clone.default_text
-        break
-    }
+      }
 
-    delete clone.default_text
-    delete clone.default_select
-    delete clone.default_multiselect
+      clone.type = 'hidden' 
+    } else {
+      switch (clone.type) {
+        case 'select':
+          clone.default = clone.default_select
+          break
+
+        case 'multiselect':
+          clone.default = clone.default_multiselect
+          break
+
+        case 'text':
+          clone.default = clone.default_text
+          break
+      }
+    }
 
     if (!clone.hasDefault) {
       clone.default = null
@@ -393,6 +417,10 @@ const transformSaveData = (data) => {
       clone.label = null
       clone.userCanEdit = false
     }
+
+    delete clone.default_text
+    delete clone.default_select
+    delete clone.default_multiselect
 
     return clone
   })
@@ -413,6 +441,20 @@ const transformLoadData = (data) => {
 
       case 'text':
         clone.default_text = clone.default
+        break
+
+      case 'hidden':
+        const options = getPreferenceOptions(line.preference)
+
+        if (options.length > 1) {
+          clone.default_select = clone.default
+        } else {
+          clone.default_text = clone.default
+        }
+
+        // Setting this to have a default value
+        // for Type of Show on Page turns true
+        clone.type = 'text'
         break
     }
 
