@@ -116,6 +116,7 @@ export default {
     } = toRefs(props)
 
     const element = ObjectElement.setup(props, context)
+    const { path } = element
 
     const $vueform = inject('$vueform')
 
@@ -170,6 +171,9 @@ export default {
       return extendedPreferences.value.map((p) => {
         let schema = {
           name: p.preference,
+          conditions: [
+            [`${path.value}.value`, 1]
+          ]
         }
 
         if (p.label !== undefined) {
