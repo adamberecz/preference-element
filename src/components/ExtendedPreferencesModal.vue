@@ -25,7 +25,7 @@
           @click.prevent="handleAdd"
           @keypress.enter.space="handleAdd"
           class="vfb-btn-primary"
-        >Add preference</div>
+        >+ Add</div>
       </div>
     </template>
 
@@ -96,9 +96,9 @@ const defaultFieldSchema = {
   ],
 }
 
-const types = Object.keys($vueform.value.extendedPreferences).reduce((prev, curr) => ({
+const types = $vueform.value.extendedPreferences.reduce((prev, curr) => ({
   ...prev,
-  [curr]: $vueform.value.extendedPreferences[curr].label,
+  [curr.ExtendedPreferenceKeyID]: curr.KeyName,
 }), {})
 
 // =============== HELPERS ===============
@@ -111,12 +111,12 @@ const revalidateDuplicates = (el$) => {
   })
 }
 
-const getPreferenceOptions = (preference) => {
-  return $vueform.value.extendedPreferences[preference]?.options || []
+const getPreferenceOptions = (id) => {
+  return $vueform.value.getExtendedPreferenceOptions(id)
 }
 
-const getPreferenceOptionsCount = (preference) => {
-  return Object.keys(getPreferenceOptions(preference)).length
+const getPreferenceOptionsCount = (id) => {
+  return getPreferenceOptions(id).length
 }
 
 // ================ DATA =================
@@ -151,7 +151,7 @@ const form = ref({
       type: 'list',
       initial: 0,
       sort: true,
-      addText: '+ Add preference',
+      addText: '+ Add',
       onChange(newValue, oldValue, el$) {
         if (newValue.length === oldValue.length -1) {
           revalidateDuplicates(el$)

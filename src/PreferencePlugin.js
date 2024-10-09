@@ -395,27 +395,243 @@ export default {
       },
     ];
 
-    $vueform.extendedPreferences = {
-      frequency: {
-        label: 'Frequency',
-        options: [
-          'Daily',
-          'Weekly',
-          'Monthly',
-        ],
+    $vueform.extendedPreferences = [
+      {
+        "ExtendedPreferenceKeyID": 1,
+        "KeyName": "Seb Test Key 1",
+        "Vals": [
+          {}
+        ]
       },
-      size: {
-        label: 'Size',
-        options: [
-          'Small',
-          'Medium',
-          'Large',
-        ],
+      {
+        "ExtendedPreferenceKeyID": 2,
+        "KeyName": "ROB TESTING AGAIN ",
+        "Vals": [
+          {
+            "Value": "d1"
+          },
+          {
+            "Value": "d2"
+          },
+          {
+            "Value": "d3"
+          },
+          {
+            "Value": "d4"
+          },
+          {
+            "Value": "d5"
+          },
+          {
+            "Value": "d6"
+          }
+        ]
       },
-      color: {
-        label: 'Color',
+      {
+        "ExtendedPreferenceKeyID": 3,
+        "KeyName": "Seb Test with Rob",
+        "Vals": [
+          {
+            "Value": "Seb Test 2"
+          },
+          {
+            "Value": "Value 1 - test 1 - update 2"
+          },
+          {
+            "Value": "Seb test"
+          }
+        ]
       },
-    }
+      {
+        "ExtendedPreferenceKeyID": 5,
+        "KeyName": "Seb Test Key 3 - Update 1",
+        "Vals": [
+          {
+            "Value": "string 1 - update 3 - 01 "
+          },
+          {
+            "Value": "string 1 - update 3 - 02"
+          },
+          {
+            "Value": "string 3 - update 3 - 03"
+          },
+          {
+            "Value": "string 4 - update 3 - 04"
+          },
+          {
+            "Value": "NEW INSERT"
+          }
+        ]
+      },
+      {
+        "ExtendedPreferenceKeyID": 8,
+        "KeyName": "JK 1 - NEW Extended Preference 2",
+        "Vals": [
+          {}
+        ]
+      },
+      {
+        "ExtendedPreferenceKeyID": 11,
+        "KeyName": "CB no dropdown",
+        "Vals": [
+          {
+            "Value": "string"
+          }
+        ]
+      },
+      {
+        "ExtendedPreferenceKeyID": 14,
+        "KeyName": "Marvel Universe - test 1",
+        "Vals": [
+          {
+            "Value": "Spiderman"
+          },
+          {
+            "Value": "Captain Marvel"
+          },
+          {
+            "Value": "Captain America"
+          }
+        ]
+      },
+      {
+        "ExtendedPreferenceKeyID": 17,
+        "KeyName": "Cohen Ext Pref",
+        "Vals": [
+          {
+            "Value": "string"
+          },
+          {
+            "Value": "Value 1"
+          }
+        ]
+      },
+      {
+        "ExtendedPreferenceKeyID": 18,
+        "KeyName": "Cohen Extended Preference DEV - updated",
+        "Vals": [
+          {
+            "Value": "d8 new"
+          },
+          {
+            "Value": "d9 new"
+          },
+          {
+            "Value": "d1"
+          },
+          {
+            "Value": "d2"
+          },
+          {
+            "Value": "d3"
+          },
+          {
+            "Value": "d4"
+          },
+          {
+            "Value": "d5"
+          },
+          {
+            "Value": "d6"
+          },
+          {
+            "Value": "d7"
+          }
+        ]
+      },
+      {
+        "ExtendedPreferenceKeyID": 19,
+        "KeyName": "Seb Test Key 1",
+        "Vals": [
+          {}
+        ]
+      },
+      {
+        "ExtendedPreferenceKeyID": 21,
+        "KeyName": "Why only dropdown keys",
+        "Vals": [
+          {
+            "Value": "Oh they"
+          },
+          {
+            "Value": "must just be"
+          },
+          {
+            "Value": "the available options"
+          },
+          {
+            "Value": "if you"
+          },
+          {
+            "Value": "choose dropdown"
+          },
+          {
+            "Value": "New Item"
+          }
+        ]
+      },
+      {
+        "ExtendedPreferenceKeyID": 22,
+        "KeyName": "No dropdown items key",
+        "Vals": [
+          {}
+        ]
+      },
+      {
+        "ExtendedPreferenceKeyID": 2023,
+        "KeyName": "BM Test - 1",
+        "Vals": [
+          {
+            "Value": "Red Bull"
+          },
+          {
+            "Value": "Mercedes"
+          },
+          {
+            "Value": "Aston Martin"
+          },
+          {
+            "Value": "Ferrari"
+          },
+          {
+            "Value": "McLaren"
+          }
+        ]
+      },
+      {
+        "ExtendedPreferenceKeyID": 2024,
+        "KeyName": "BM Test - 2",
+        "Vals": [
+          {
+            "Value": "Red"
+          },
+          {
+            "Value": "Green"
+          },
+          {
+            "Value": "Blue"
+          }
+        ]
+      },
+      {
+        "ExtendedPreferenceKeyID": 2025,
+        "KeyName": "BM Test - 3",
+        "Vals": [
+          {
+            "Value": "1"
+          },
+          {
+            "Value": "2"
+          },
+          {
+            "Value": "3"
+          },
+          {
+            "Value": "4"
+          }
+        ]
+      }
+    ]
 
     $vueform.getChannel = (channel) => {
       return $vueform.channels.find(c => c.value === channel)
@@ -429,6 +645,14 @@ export default {
       return channel
         ? $vueform.channels.find(c => c.value === channel).find(s => s.value === statement)
         : $vueform.channels.find(c => c.statements.find(s => s.value === statement))?.statements.find(s => s.value === statement) || {}
+    }
+
+    $vueform.getExtendedPreference = (id) => {
+      return $vueform.extendedPreferences.find(ep => ep.ExtendedPreferenceKeyID == id) || {}
+    }
+
+    $vueform.getExtendedPreferenceOptions = (id) => {
+      return ($vueform.getExtendedPreference(id).Vals || []).map(v => v.Value)
     }
   },
 };

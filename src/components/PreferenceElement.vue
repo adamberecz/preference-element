@@ -113,10 +113,25 @@ export default {
       items,
       onlyAllowOptOut,
       mode,
+      name,
+      formatLoad,
+      submit,
     } = toRefs(props)
 
-    const element = ObjectElement.setup(props, context)
-    const { path } = element
+    const element = ObjectElement.setup(props, {
+      // Added for warn-free HMR
+      name: 'PreferenceElement',
+      emits: ['change', 'remove', 'beforeCreate', 'created', 'beforeMount', 'mounted', 'beforeUpdate', 'updated', 'beforeUnmount', 'unmounted'],
+      ...context,
+    })
+
+    const {
+      path,
+      form$,
+      available,
+      children$,
+      children$Array,
+    } = element
 
     const $vueform = inject('$vueform')
 
@@ -163,10 +178,6 @@ export default {
       return props
     })
 
-    const extendedPreferenceList = computed(() => {
-      return $vueform.value.extendedPreferences
-    })
-
     const extendedPreferenceSchemas = computed(() => {
       return extendedPreferences.value.map((p) => {
         let schema = {
@@ -186,11 +197,11 @@ export default {
 
         if (p.type === 'select') {
           schema.component = 'SelectElement'
-          schema.items = extendedPreferenceList.value[p.preference].options
+          schema.items = $vueform.value.getExtendedPreferenceOptions(p.preference)
         }
         else if (p.type === 'multiselect') {
           schema.component = 'TagsElement'
-          schema.items = extendedPreferenceList.value[p.preference].options
+          schema.items = $vueform.value.getExtendedPreferenceOptions(p.preference)
         }
         else {
           schema.component = 'TextElement'
@@ -211,6 +222,81 @@ export default {
       })
     })
 
+    const data = computed(() => {
+      let data = {}
+      
+      children$Array.value.forEach((element$) => {
+        if (!element$.available) {
+          return
+        }
+
+        let elData
+
+        if (element$.name === 'value') {
+          elData = element$.data
+        } else {
+          elData = {
+            extendedPreferences: [
+              ...(data?.extendedPreferences || []),
+            ]
+          }
+
+          elData.extendedPreferences.push({
+            id: element$.name,
+            name: $vueform.value.getExtendedPreference(element$.name)?.KeyName,
+            value: Array.isArray(element$.value) ? element$.value : (element$.value ? [element$.value] : [])
+          })
+        }
+
+        data = {
+          ...data,
+          ...elData,
+        }
+      })
+      
+      return { [name.value]: data }
+    })
+    
+    const requestData = computed(() => {
+      if (!available.value || !submit.value) {
+        return {}
+      }
+      
+      return data.value
+    })
+  
+    // =============== METHODS ===============
+
+    const setData = (val, action = 'load') => {
+      const value = val.value || 0
+      const extendedPreferences = val.extendedPreferences || []
+
+      children$.value.value.load(value)
+
+      extendedPreferenceSchemas.value.forEach((schema) => {
+        const type = schema.component.toLowerCase().replace('element', '')
+        const epData = extendedPreferences.find(ep => ep.id == schema.name) || {}
+        const epValue = type === 'tags' ? (epData.value || []) : (epData.value?.[0] || null)
+        const el$ = children$.value[schema.name]
+
+        if ((Array.isArray(epValue) && epValue.length) || (!Array.isArray(epValue) && epValue !== null)) {
+          el$[action](epValue)
+        } else if (action === 'load') {
+          el$.clear()
+        }
+      })
+    }
+    
+    const load = (val, format = false) => {
+      let formatted = format && formatLoad.value ? formatLoad.value(val, form$.value) : val
+
+      setData(formatted)
+    }
+    
+    const update = (val) => {
+      setData(val, 'update')
+    }
+
     watch(preferenceDefault, () => {
       preference$.value.update(preferenceDefault.value)
     })
@@ -218,6 +304,10 @@ export default {
     return {
       defaultClasses,
       ...element,
+      data,
+      requestData,
+      load,
+      update,
       preferenceComponent,
       preferenceComponentProps,
       preference$,

@@ -11,7 +11,7 @@
       </div>
     </div>
     <div class="vfb-btn-primary vfb-btn-xs" @click="handleEdit">
-      Edit
+      {{ extendedPreferences.length ? 'Edit' : '+ Add' }}
     </div>
   </div>
 </template>
@@ -31,12 +31,8 @@ export default {
 
     // ============== COMPUTED ===============
 
-    const extendedPreferenceList = computed(() => {
-      return $vueform.value.extendedPreferences
-    })
-
     const extendedPreferences = computed(() => {
-      return Object.values(el$.value.attrs.extendedPreferences || []).map((p) => extendedPreferenceList.value[p.preference].label) || []
+      return Object.values(el$.value.attrs.extendedPreferences || []).map(ep => $vueform.value.getExtendedPreference(ep.preference).KeyName)
     })
 
     // =============== METHODS ===============
