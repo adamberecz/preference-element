@@ -92,7 +92,10 @@ const defaultFieldSchema = {
   },
   rules: 'required',
   conditions: [
-    ['extendedPreferences.*.hasDefault', true],
+    [
+      ['extendedPreferences.*.hasDefault', true],
+      ['extendedPreferences.*.showOnPage', false],
+    ]
   ],
 }
 
@@ -251,9 +254,6 @@ const form = ref({
             messages: {
               required: 'Please select a type',
             },
-            conditions: [
-              ['extendedPreferences.*.showOnPage', true]
-            ]
           },
           label: {
             type: 'text',
@@ -299,28 +299,19 @@ const form = ref({
             rules: [
               {
                 accepted: [
-                  [
-                    ['extendedPreferences.*.userCanEdit', false],
-                    ['extendedPreferences.*.showOnPage', false],
-                  ]
+                  ['extendedPreferences.*.userCanEdit', false],
                 ]
               }
-            ]
+            ],
+            conditions: [
+              ['extendedPreferences.*.showOnPage', true],
+            ],
           },
           default_text: {
             ...defaultFieldSchema,
             conditions: [
               ...defaultFieldSchema.conditions,
-              (form$, el$) => {
-                const siblings$ = form$.siblings$(el$.path)
-
-                if (siblings$.showOnPage.value) {
-                  return siblings$.type.value === 'text'
-                }
-                else {
-                  return getPreferenceOptionsCount(siblings$.preference.value) <= 1
-                }
-              }
+              ['extendedPreferences.*.type', 'text'],
             ],
           },
           default_select: {
@@ -338,16 +329,7 @@ const form = ref({
             search: true,
             conditions: [
               ...defaultFieldSchema.conditions,
-              (form$, el$) => {
-                const siblings$ = form$.siblings$(el$.path)
-
-                if (siblings$.showOnPage.value) {
-                  return siblings$.type.value === 'select'
-                }
-                else {
-                  return getPreferenceOptionsCount(siblings$.preference.value) > 1
-                }
-              }
+              ['extendedPreferences.*.type', 'select'],
             ],
           },
           default_multiselect: {
@@ -367,7 +349,6 @@ const form = ref({
             hideSelected: false,
             conditions: [
               ...defaultFieldSchema.conditions,
-              ['extendedPreferences.*.showOnPage', true],
               ['extendedPreferences.*.type', 'multiselect'],
             ],
           },
@@ -383,39 +364,28 @@ const transformSaveData = (data) => {
   return data.map((line) => {
     const clone = { ...line }
 
-    if (!clone.showOnPage) {
-      const options = getPreferenceOptions(line.preference)
-
-      if (options.length > 1) {
+    switch (clone.type) {
+      case 'select':
         clone.default = clone.default_select
-      } else {
+        break
+
+      case 'multiselect':
+        clone.default = clone.default_multiselect
+        break
+
+      case 'text':
         clone.default = clone.default_text
-      }
-
-      clone.type = 'hidden' 
-    } else {
-      switch (clone.type) {
-        case 'select':
-          clone.default = clone.default_select
-          break
-
-        case 'multiselect':
-          clone.default = clone.default_multiselect
-          break
-
-        case 'text':
-          clone.default = clone.default_text
-          break
-      }
-    }
-
-    if (!clone.hasDefault) {
-      clone.default = null
+        break
     }
 
     if (!clone.showOnPage) {
       clone.label = null
       clone.userCanEdit = false
+      clone.hasDefault = true
+    }
+
+    if (!clone.hasDefault) {
+      clone.default = null
     }
 
     delete clone.default_text
