@@ -116,6 +116,7 @@ export default {
       name,
       formatLoad,
       submit,
+      view,
     } = toRefs(props)
 
     const element = ObjectElement.setup(props, {
@@ -164,6 +165,7 @@ export default {
         showChannel: showChannel.value,
         channel: channel.value,
         statement: statement.value,
+        view: view.value,
       }
 
       if (preferenceType.value === 'radio') {
